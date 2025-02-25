@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Swinging text</title>
 
+    <script src="decomp.min.js" type="text/javascript"></script>
+
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"
       integrity="sha512-6+7rTBmR6pRFe9fa0vCFjFaHZj/XYa7774bEBzRtxgdpIJOS++R3cKd6Prg/eJmxtsJotd8KAg4g57uuVQsZKA=="
@@ -17,7 +19,24 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="container" class="container"></div>
+    <div id="container" class="container">
+      <div id="blue-box" class="box box--blue">
+        <h2>
+          <span>THE BIGGEST RISK</span>
+          <span>A BRAND CAN TAKE</span>
+        </h2>
+      </div>
+
+      <div id="orange-box" class="box box--orange">
+        <h2>
+          <span>IS NOT</span>
+          <span>TAKING ONE</span>
+          <span>AT ALL</span>
+        </h2>
+      </div>
+
+      <div id="pink-box" class="box box--pink"></div>
+    </div>
 
     <script src="script.js"></script>
   </body>

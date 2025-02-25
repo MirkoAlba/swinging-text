@@ -123,6 +123,50 @@ table {
 }
 
 .container {
+  position: fixed;
+  top: 0;
+  left: 0;
   font-family: neue-haas-grotesk-display, sans-serif;
   font-weight: 500;
+  background-color: #ffe256;
+  height: 100vh;
+  width: 100vw;
+}
+
+.box {
+  position: absolute;
+  user-select: none;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+}
+
+.box h2 {
+  line-height: 0.7;
+  font-size: 8vw;
+  text-align: center;
+}
+
+.box span:not(:last-child) {
+  display: block;
+  margin-bottom: 1.5vw;
+}
+
+.box--blue {
+  background-color: #80d1ce;
+}
+
+.box--orange {
+  background-color: #fd7d47;
+  overflow: hidden;
+  border-radius: 50%;
+  padding: 20px;
+}
+
+.box--pink {
+  background-color: #ffc3a8;
+  border-radius: 50%;
+  height: 7.5vw;
+  width: 7.5vw;
 }
