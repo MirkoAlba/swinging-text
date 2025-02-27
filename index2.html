@@ -15,6 +15,108 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <style>
+      body {
+        overflow: hidden;
+      }
+
+      canvas {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* Box sizing rules */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      /* Prevent font size inflation */
+      html {
+        -moz-text-size-adjust: none;
+        -webkit-text-size-adjust: none;
+        text-size-adjust: none;
+      }
+
+      /* Remove default margin in favour of better control in authored CSS */
+      body,
+      h1,
+      h2,
+      h3,
+      h4,
+      p,
+      figure,
+      blockquote,
+      dl,
+      dd {
+        margin-block-end: 0;
+      }
+
+      /* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
+      ul[role="list"],
+      ol[role="list"] {
+        list-style: none;
+      }
+
+      /* Set core body defaults */
+      body {
+        min-height: 100vh;
+        line-height: 1.5;
+      }
+
+      /* Set shorter line heights on headings and interactive elements */
+      h1,
+      h2,
+      h3,
+      h4,
+      button,
+      input,
+      label {
+        line-height: 1.1;
+      }
+
+      /* Balance text wrapping on headings */
+      h1,
+      h2,
+      h3,
+      h4 {
+        text-wrap: balance;
+      }
+
+      /* A elements that don't have a class get default styles */
+      a:not([class]) {
+        text-decoration-skip-ink: auto;
+        color: currentColor;
+      }
+
+      /* Make images easier to work with */
+      img,
+      picture {
+        max-width: 100%;
+        display: block;
+      }
+
+      /* Inherit fonts for inputs and buttons */
+      input,
+      button,
+      textarea,
+      select {
+        font-family: inherit;
+        font-size: inherit;
+      }
+
+      /* Make sure textareas without a rows attribute are not tiny */
+      textarea:not([rows]) {
+        min-height: 10em;
+      }
+
+      /* Anything that has been anchored to should have extra scroll margin */
+      :target {
+        scroll-margin-block: 5ex;
+      }
+    </style>
+
     <script>
       var Engine = Matter.Engine,
         Render = Matter.Render,
@@ -25,7 +127,9 @@
         MouseConstraint = Matter.MouseConstraint,
         Mouse = Matter.Mouse,
         Composite = Matter.Composite,
-        Bodies = Matter.Bodies;
+        Bodies = Matter.Bodies,
+        Body = Matter.Body,
+        Events = Matter.Events;
 
       // create engine
       var engine = Engine.create(),
@@ -36,8 +140,8 @@
         element: document.body,
         engine: engine,
         options: {
-          width: 800,
-          height: 600,
+          width: window.innerWidth,
+          height: window.innerHeight,
           showAngleIndicator: true,
         },
       });
@@ -48,29 +152,92 @@
       var runner = Runner.create();
       Runner.run(runner, engine);
 
+      var bodyBRadius = 60,
+        bodyAWidth = 400,
+        bodyAHeight = 150;
+
       // add stiff multi-body constraint
-      var bodyA = Bodies.polygon(100, 400, 6, 20);
-      var bodyB = Bodies.polygon(200, 400, 1, 50, {
-        isStatic: true,
-      });
+      // var bodyA = Bodies.rectangle(
+      //   window.innerWidth / 2,
+      //   window.innerHeight - bodyBRadius - 100,
+      //   bodyAWidth,
+      //   bodyAHeight
+      // );
+
+      var bodyA = createEllipse(
+        window.innerWidth / 2,
+        window.innerHeight - bodyBRadius - 100,
+        bodyAWidth,
+        bodyAHeight
+      );
+
+      var bodyB = Bodies.circle(
+        window.innerWidth / 2,
+        window.innerHeight - bodyBRadius,
+        bodyBRadius,
+        {
+          isStatic: true,
+        }
+      );
 
       var constraint = Constraint.create({
         bodyA: bodyA,
-        pointA: { x: 20, y: 0 },
+        pointA: { x: 0, y: bodyAHeight / 2 },
         bodyB: bodyB,
-        pointB: { x: -50, y: 0 },
-        length: 1,
+        pointB: { x: 0, y: -bodyBRadius },
+        length: 3,
       });
 
       Composite.add(world, [bodyA, bodyB, constraint]);
 
+      var bodyAInitialX = bodyA.position.x,
+        maxAngle = 12 * (Math.PI / 180), // 30 gradi
+        minAngle = -12 * (Math.PI / 180), // -30 gradi
+        rotationDirection = 1,
+        rotationSpeed = 0.003;
+
+      Events.on(engine, "beforeUpdate", function (event) {
+        var time = engine.timing.timestamp,
+          timeScale = (event.delta || 1000 / 60) / 1000;
+
+        var newAngle = bodyA.angle + rotationSpeed * rotationDirection;
+
+        if (newAngle >= maxAngle) {
+          newAngle = maxAngle;
+          rotationDirection = -1;
+        } else if (newAngle <= minAngle) {
+          newAngle = minAngle;
+          rotationDirection = 1;
+        }
+
+        // Body.setAngle(bodyA, newAngle);
+      });
+
       // WALLS
       Composite.add(world, [
         // walls
-        Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
-        Bodies.rectangle(400, 600, 800, 50, { isStatic: true }),
-        Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
-        Bodies.rectangle(0, 300, 50, 600, { isStatic: true }),
+        Bodies.rectangle(window.innerWidth / 2, 0, window.innerWidth, 0, {
+          isStatic: true,
+        }),
+        Bodies.rectangle(
+          window.innerWidth / 2,
+          window.innerHeight,
+          window.innerWidth,
+          0,
+          {
+            isStatic: true,
+          }
+        ),
+        Bodies.rectangle(
+          window.innerWidth,
+          window.innerHeight / 2,
+          0,
+          window.innerHeight,
+          { isStatic: true }
+        ),
+        Bodies.rectangle(0, window.innerHeight / 2, 0, window.innerHeight, {
+          isStatic: true,
+        }),
       ]);
 
       // add mouse control
@@ -94,8 +261,24 @@
       // fit the render viewport to the scene
       Render.lookAt(render, {
         min: { x: 0, y: 0 },
-        max: { x: 800, y: 600 },
+        max: { x: window.innerWidth, y: window.innerHeight },
       });
+
+      function createEllipse(x, y, width, height, options, sides = 100) {
+        var vertices = [];
+        var a = width / 2; // horizontal radius
+        var b = height / 2; // vertical radius
+
+        for (let i = 0; i < sides; i++) {
+          var angle = ((2 * Math.PI) / sides) * i;
+          vertices.push({
+            x: a * Math.cos(angle),
+            y: b * Math.sin(angle),
+          });
+        }
+
+        return Bodies.fromVertices(x, y, [vertices], options, true);
+      }
     </script>
   </body>
 </html>

@@ -155,6 +155,7 @@ table {
 
 .box--blue {
   background-color: #80d1ce;
+  overflow: hidden;
 }
 
 .box--orange {

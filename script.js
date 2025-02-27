@@ -19,19 +19,22 @@ window.addEventListener("load", function () {
   VIEW.height = window.innerHeight;
 
   var defaultObjectOptions = {
-    mass: 2,
+    // mass: 2,
     restitution: 0,
     friction: 1,
-    sleepThreshold: 80,
+    // sleepThreshold: 80,
     // frictionAir: 0.025, // increasing the frictionAir will make the boxes fall slower
   };
 
   // create engine
   var engine = Engine.create({
-      enableSleeping: true,
+      // enableSleeping: true,
       pixelRatio: 1,
     }),
     world = engine.world;
+
+  // Reverse gravity
+  engine.gravity.y = -1;
 
   var debug = false,
     url = new URL(window.location.href);
@@ -127,20 +130,32 @@ window.addEventListener("load", function () {
     orangeBox = document.getElementById("orange-box"),
     pinkBox = document.getElementById("pink-box");
 
+  var blueBoxPositionInfo = blueBox.getBoundingClientRect(),
+    blueBoxWidth = blueBoxPositionInfo.width,
+    blueBoxHeight = blueBoxPositionInfo.height;
+
+  var orangeBoxPositionInfo = orangeBox.getBoundingClientRect(),
+    orangeBoxWidth = orangeBoxPositionInfo.width,
+    orangeBoxHeight = orangeBoxPositionInfo.height;
+
+  var pinkBoxPositionInfo = pinkBox.getBoundingClientRect(),
+    pinkBoxWidth = pinkBoxPositionInfo.width,
+    pinkBoxHeight = pinkBoxPositionInfo.height;
+
   // Elements arraytorender with options
   elements = [
-    // {
-    //   type: "rectangle",
-    //   el: blueBox,
-    //   x: VIEW.width / 2,
-    //   y: VIEW.height - pinkBox.offsetHeight - orangeBox.offsetHeight,
-    //   options: {},
-    // },
+    {
+      type: "rectangle",
+      el: blueBox,
+      x: VIEW.width / 2,
+      y: VIEW.height - blueBoxHeight / 2 - orangeBoxHeight - pinkBoxHeight,
+      options: {},
+    },
     {
       type: "ellipse",
       el: orangeBox,
       x: VIEW.width / 2,
-      y: VIEW.height - pinkBox.offsetHeight - 20,
+      y: VIEW.height - orangeBoxHeight / 2 - pinkBoxHeight,
       options: {},
     },
     {
@@ -148,15 +163,11 @@ window.addEventListener("load", function () {
       el: pinkBox,
       x: VIEW.width / 2,
       y: VIEW.height - pinkBox.offsetHeight / 2,
-      options: {},
+      options: { isStatic: true },
     },
   ];
 
   elements.forEach(function (element, i) {
-    var boxPositionInfo = element.el.getBoundingClientRect(),
-      bodyWidth = boxPositionInfo.width,
-      bodyHeight = boxPositionInfo.height;
-
     var body;
 
     switch (element.type) {
@@ -164,7 +175,7 @@ window.addEventListener("load", function () {
         body = Bodies.circle(
           element.x,
           element.y,
-          bodyWidth / 2,
+          pinkBoxWidth / 2,
           deepMerge(
             {},
             {
@@ -179,8 +190,8 @@ window.addEventListener("load", function () {
         body = createEllipse(
           element.x,
           element.y,
-          bodyWidth,
-          bodyHeight,
+          orangeBoxWidth,
+          orangeBoxHeight,
           deepMerge(
             {},
             {
@@ -195,8 +206,8 @@ window.addEventListener("load", function () {
         body = Bodies.rectangle(
           element.x,
           element.y,
-          bodyWidth,
-          bodyHeight,
+          blueBoxWidth,
+          blueBoxHeight,
           deepMerge(
             {},
             {
@@ -216,35 +227,63 @@ window.addEventListener("load", function () {
     element.el.style.opacity = 1; // make the element visible again
   });
 
-  World.add(engine.world, bodies);
-
-  var orangeBody = bodies[0];
-  var pinkBody = bodies[1];
+  var blueBody = bodies[0];
+  var orangeBody = bodies[1];
+  var pinkBody = bodies[2];
 
   // Link the bodies
 
-  var constraint = Constraint.create({
+  var constraintPinkToOrange = Constraint.create({
     bodyA: pinkBody,
-    pointA: { x: 0, y: -pinkBox.offsetHeight / 2 }, // top of the pink box
+    pointA: { x: 0, y: -pinkBoxHeight / 2 }, // top of the pink box
     bodyB: orangeBody,
-    pointB: { x: 0, y: 0 },
-    // length: orangeBox.offsetHeight / 2,
-    // stiffness: 1,
+    pointB: { x: 0, y: orangeBoxHeight / 2 }, // top of the orange box
+    length: 1,
+    stiffness: 1,
   });
 
-  Composite.add(world, [pinkBody, orangeBody, constraint]);
+  var constraintBlueToOrange = Constraint.create({
+    bodyA: blueBody,
+    pointA: { x: 0, y: blueBoxHeight / 2 },
+    bodyB: orangeBody,
+    pointB: { x: 0, y: -orangeBoxHeight / 2 },
+    length: 2,
+    stiffness: 1,
+  });
 
-  // Animate objects
+  // Add objects to the world
+  Composite.add(world, [
+    blueBody,
+    orangeBody,
+    pinkBody,
+    constraintPinkToOrange,
+    constraintBlueToOrange,
+  ]);
+
+  /**
+   * Animate objects
+   */
 
   // Pink body variables
-  var pinkBodyInitialX = pinkBody.position.x;
+  var pinkBodyInitialX = pinkBody.position.x,
+    pinkBodyOffset = 80,
+    pinkBodySpeed = 0.002;
 
   // Orange body variables
-  var orangeBodyInitialX = orangeBody.position.x,
-    maxAngle = 12 * (Math.PI / 180), // 30 gradi
-    minAngle = -12 * (Math.PI / 180), // -30 gradi
+  var maxAngle = 12 * (Math.PI / 180),
+    minAngle = -12 * (Math.PI / 180),
     rotationDirection = 1,
     rotationSpeed = 0.003;
+
+  // Blue body variables
+  var maxAngleBlueBody = 14 * (Math.PI / 180),
+    minAngleBlueBody = -14 * (Math.PI / 180),
+    rotationDirectionBlueBody = 1,
+    rotationSpeedBlueBody = 0.003;
+
+  var lastTime = 0,
+    forceDirection = 1,
+    forceIntensity = 1.5;
 
   Events.on(engine, "beforeUpdate", function (event) {
     var time = engine.timing.timestamp,
@@ -253,15 +292,18 @@ window.addEventListener("load", function () {
     /**
      * Pink Body Swing
      */
-    // var pinkOffset = 20 * Math.sin(time * 0.001);
-    // Body.setPosition(pinkBody, {
-    //   x: pinkBodyInitialX + pinkOffset,
-    //   y: pinkBody.position.y,
-    // });
+
+    var pinkOffset = pinkBodyOffset * Math.sin(time * pinkBodySpeed);
+
+    Body.setPosition(pinkBody, {
+      x: pinkBodyInitialX + pinkOffset,
+      y: pinkBody.position.y,
+    });
 
     /**
      * Orange Body Swing
      */
+
     // var newAngle = orangeBody.angle + rotationSpeed * rotationDirection;
 
     // if (newAngle >= maxAngle) {
@@ -274,39 +316,87 @@ window.addEventListener("load", function () {
 
     // Body.setAngle(orangeBody, newAngle);
 
-    // var orangeOffset = 20 * Math.sin(time * 0.001);
-    // Body.setPosition(orangeBody, {
-    //   x: orangeBodyInitialX + orangeOffset,
-    //   y: orangeBody.position.y,
-    // });
+    // every tot sec
+    // if (engine.timing.timestamp - lastTime >= 4000) {
+    //   var forceMagnitude =
+    //     forceDirection * forceIntensity * orangeBody.mass * timeScale;
+
+    //   Body.applyForce(
+    //     orangeBody,
+    //     {
+    //       x: orangeBody.position.x + orangeBoxWidth / 2,
+    //       y: orangeBody.position.y,
+    //     },
+    //     {
+    //       x: forceMagnitude,
+    //       y: 0,
+    //     }
+    //   );
+
+    //   // update last time
+    //   lastTime = engine.timing.timestamp;
+
+    //   forceDirection *= -1;
+
+    //   console.log("every tot secs");
+    // }
+
+    /**
+     * Blue Body Swing
+     */
+    // var newAngleBlueBody =
+    //   blueBody.angle + rotationSpeedBlueBody * rotationDirectionBlueBody;
+
+    // if (newAngleBlueBody >= maxAngleBlueBody) {
+    //   newAngleBlueBody = maxAngleBlueBody;
+    //   rotationDirectionBlueBody = -1;
+    // } else if (newAngleBlueBody <= minAngleBlueBody) {
+    //   newAngleBlueBody = minAngleBlueBody;
+    //   rotationDirectionBlueBody = 1;
+    // }
+
+    // Body.setAngle(blueBody, newAngleBlueBody);
   });
 
-  (function update() {
-    for (var i = 0, l = elements.length; i < l; i++) {
-      var bodyDom = elements[i].el,
-        body = null;
+  Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: VIEW.width, y: VIEW.height },
+  });
 
-      for (var j = 0, k = bodies.length; j < k; j++) {
-        if (bodies[j].id == bodyDom.id) {
-          body = bodies[j];
+  if (debug) {
+    blueBox.style.opacity = 0;
+    orangeBox.style.opacity = 0;
+    pinkBox.style.opacity = 0;
+  }
 
-          break;
+  if (!debug) {
+    (function update() {
+      for (var i = 0, l = elements.length; i < l; i++) {
+        var bodyDom = elements[i].el,
+          body = null;
+
+        for (var j = 0, k = bodies.length; j < k; j++) {
+          if (bodies[j].id == bodyDom.id) {
+            body = bodies[j];
+
+            break;
+          }
         }
+
+        if (body === null) continue;
+
+        bodyDom.style.transform =
+          "translate( " +
+          (body.position.x - bodyDom.offsetWidth / 2) +
+          "px, " +
+          (body.position.y - bodyDom.offsetHeight / 2) +
+          "px )";
+        bodyDom.style.transform += "rotate( " + body.angle + "rad )";
       }
 
-      if (body === null) continue;
-
-      // bodyDom.style.transform =
-      //   "translate( " +
-      //   (body.position.x - bodyDom.offsetWidth / 2) +
-      //   "px, " +
-      //   (body.position.y - bodyDom.offsetHeight / 2) +
-      //   "px )";
-      // bodyDom.style.transform += "rotate( " + body.angle + "rad )";
-    }
-
-    window.requestAnimationFrame(update);
-  })();
+      window.requestAnimationFrame(update);
+    })();
+  }
 
   function createEllipse(x, y, width, height, options, sides = 100) {
     var vertices = [];
