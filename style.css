@@ -171,3 +171,23 @@ table {
   height: 7.5vw;
   width: 7.5vw;
 }
+
+.box--white {
+  background-color: #fff;
+  border-radius: 50%;
+}
+
+@media (max-width: 576px) {
+  .box--orange {
+    padding: 10px;
+  }
+
+  .box span:not(:last-child) {
+    margin-bottom: 2.5vw;
+  }
+
+  .box--pink {
+    height: 10vw;
+    width: 10vw;
+  }
+}

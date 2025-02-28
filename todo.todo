@@ -1,3 +1,5 @@
-✔ Resize bodies -> problem with the moving objects is not possible @done(25-02-28 14:47)
+✔ Resize bodies -> problem with the moving objects, it's not possible @done(25-02-28 14:47)
 ☐ Pop up/intro of the boxes
-☐ White ball drop from above
+✔ White ball drop from above @done(25-02-28 18:42)
+✔ check and fix bodies overlapping @done(25-02-28 18:53)
+✔ test mobile -> increase the elements sizes on mobile @done(25-02-28 18:57)

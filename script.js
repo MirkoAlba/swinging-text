@@ -23,8 +23,6 @@ window.addEventListener("load", function () {
     // mass: 2,
     restitution: 0,
     friction: 1,
-    // sleepThreshold: 80,
-    // frictionAir: 0.025, // increasing the frictionAir will make the boxes fall slower
   };
 
   // Walls default options
@@ -39,6 +37,36 @@ window.addEventListener("load", function () {
     restitution: 0,
     friction: 1,
   };
+
+  // White spawning circle spawing options
+  var fallingCircleOptions = {
+    seconds: 6,
+    xPosition: VIEW.width / 2 + 200,
+    yPosition: -VIEW.height,
+    circleDimensions: 30,
+    fallingSpeed: 20,
+    defaultBodyOptions: {
+      isStatic: false,
+      restitution: 0.6,
+      friction: 1,
+    },
+  };
+
+  // Orange body variables
+  // var maxAngle = 12 * (Math.PI / 180),
+  //   minAngle = -12 * (Math.PI / 180),
+  //   rotationDirection = 1,
+  //   rotationSpeed = 0.003;
+
+  // Blue body variables
+  // var maxAngleBlueBody = 14 * (Math.PI / 180),
+  //   minAngleBlueBody = -14 * (Math.PI / 180),
+  //   rotationDirectionBlueBody = 1,
+  //   rotationSpeedBlueBody = 0.003;
+
+  // var lastTime = 0,
+  //   forceDirection = 1,
+  //   forceIntensity = 1.5;
 
   // create engine
   var engine = Engine.create({
@@ -102,9 +130,9 @@ window.addEventListener("load", function () {
 
   Runner.run(runner, engine);
 
-  // add walls
-
   function createBodies() {
+    // add walls
+
     Composite.add(world, [
       // ground
       (ground = Bodies.rectangle(
@@ -116,20 +144,24 @@ window.addEventListener("load", function () {
       )),
       // walls
       (rightWall = Bodies.rectangle(
-        VIEW.width + 50,
+        VIEW.width + 200,
         VIEW.height / 2,
         100,
         VIEW.height,
         wallopts
       )), // right
       (leftWall = Bodies.rectangle(
-        -50,
+        -200,
         VIEW.height / 2,
         100,
         VIEW.height,
         wallopts
       )), // left
     ]);
+
+    rightWall.id = "rightWall";
+    leftWall.id = "leftWall";
+    ground.id = "ground";
 
     // Boxes
 
@@ -181,6 +213,10 @@ window.addEventListener("load", function () {
       var body;
 
       switch (element.type) {
+        case "falling-circle":
+          body = element.body;
+
+          break;
         case "circle":
           body = Bodies.circle(
             element.x,
@@ -217,7 +253,7 @@ window.addEventListener("load", function () {
             element.x,
             element.y,
             blueBoxWidth,
-            blueBoxHeight,
+            blueBoxHeight + 4,
             deepMerge(
               {},
               {
@@ -257,7 +293,7 @@ window.addEventListener("load", function () {
       pointA: { x: 0, y: blueBoxHeight / 2 },
       bodyB: orangeBody,
       pointB: { x: 0, y: -orangeBoxHeight / 2 },
-      length: 2,
+      length: 4,
       stiffness: 1,
     });
 
@@ -272,6 +308,7 @@ window.addEventListener("load", function () {
 
     /**
      * Animate objects
+     * Tweak variables
      */
 
     // Pink body variables
@@ -279,25 +316,34 @@ window.addEventListener("load", function () {
       pinkBodyOffset = 80,
       pinkBodySpeed = 0.002;
 
-    // Orange body variables
-    var maxAngle = 12 * (Math.PI / 180),
-      minAngle = -12 * (Math.PI / 180),
-      rotationDirection = 1,
-      rotationSpeed = 0.003;
+    if (window.matchMedia("(max-width: 576px)").matches) {
+      pinkBodyOffset = 40;
 
-    // Blue body variables
-    var maxAngleBlueBody = 14 * (Math.PI / 180),
-      minAngleBlueBody = -14 * (Math.PI / 180),
-      rotationDirectionBlueBody = 1,
-      rotationSpeedBlueBody = 0.003;
-
-    var lastTime = 0,
-      forceDirection = 1,
-      forceIntensity = 1.5;
+      fallingCircleOptions.xPosition = VIEW.width / 2;
+      fallingCircleOptions.circleDimensions = 15;
+    }
 
     Events.on(engine, "beforeUpdate", function (event) {
       var time = engine.timing.timestamp,
         timeScale = (event.delta || 1000 / 60) / 1000;
+
+      /**
+       * White Body Circle
+       */
+
+      // Normal gravity
+      world.bodies.forEach((body) => {
+        if (body.reverseGravity) {
+          const additionalForce = {
+            x: 0,
+            y: body.mass * 2 * engine.world.gravity.scale,
+          };
+
+          Body.applyForce(body, body.position, additionalForce);
+
+          Body.setAngularVelocity(body, 2);
+        }
+      });
 
       /**
        * Pink Body Swing
@@ -347,8 +393,6 @@ window.addEventListener("load", function () {
       //   lastTime = engine.timing.timestamp;
 
       //   forceDirection *= -1;
-
-      //   console.log("every tot secs");
       // }
 
       /**
@@ -366,7 +410,35 @@ window.addEventListener("load", function () {
       // }
 
       // Body.setAngle(blueBody, newAngleBlueBody);
+
+      // world.bodies.forEach((body) => {
+      //   if (body.reverseGravity) {
+      //     var gravity = engine.world.gravity;
+
+      //     Body.applyForce(body, body.position, {
+      //       x: -gravity.x * gravity.scale * body.mass,
+      //       y: -gravity.y * gravity.scale * body.mass,
+      //     });
+      //   }
+      // });
     });
+
+    Events.on(engine, "collisionStart", function (event) {
+      event.pairs.forEach((pair) => {
+        if (pair.bodyB.id == rightWall.id || pair.bodyB.id == leftWall.id) {
+          document.getElementById(pair.bodyA.id).remove();
+          World.remove(world, pair.bodyA);
+        }
+      });
+    });
+
+    spawnFallingCircle(
+      fallingCircleOptions.seconds,
+      fallingCircleOptions.xPosition,
+      fallingCircleOptions.yPosition,
+      fallingCircleOptions.circleDimensions,
+      fallingCircleOptions.fallingSpeed
+    );
 
     Render.lookAt(render, {
       min: { x: 0, y: 0 },
@@ -404,8 +476,62 @@ window.addEventListener("load", function () {
           bodyDom.style.transform += "rotate( " + body.angle + "rad )";
         }
 
+        world.bodies.forEach((body) => {
+          if (body.id.toString().toLowerCase().includes("falling-circle")) {
+            var bodyDom = document.getElementById(body.id);
+
+            bodyDom.style.transform =
+              "translate( " +
+              (body.position.x - bodyDom.offsetWidth / 2) +
+              "px, " +
+              (body.position.y - bodyDom.offsetHeight / 2) +
+              "px )";
+            bodyDom.style.transform += "rotate( " + body.angle + "rad )";
+            bodyDom.style.opacity = 1;
+          }
+        });
+
         window.requestAnimationFrame(update);
       })();
+    }
+
+    function spawnFallingCircle(
+      seconds,
+      xPosition,
+      yPosition,
+      circleDimensions,
+      fallingSpeed
+    ) {
+      setInterval(() => {
+        const circle = Bodies.circle(
+          xPosition,
+          yPosition,
+          circleDimensions,
+          fallingCircleOptions.defaultBodyOptions
+        );
+
+        Matter.Body.setVelocity(circle, { x: 0, y: fallingSpeed });
+
+        circle.reverseGravity = true;
+
+        circle.id = "falling-circle-" + Math.floor(1000 + Math.random() * 9000);
+
+        var newElement = document.createElement("div");
+
+        newElement.classList.add("box");
+
+        newElement.classList.add("box--white");
+
+        newElement.id = circle.id;
+
+        newElement.style.width = circleDimensions * 2 + "px";
+
+        newElement.style.height = circleDimensions * 2 + "px";
+
+        container.prepend(newElement);
+
+        Composite.add(world, circle);
+      }, seconds * 1000);
     }
   }
 
