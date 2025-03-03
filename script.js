@@ -68,6 +68,10 @@ window.addEventListener("load", function () {
   var maxAngle = Math.PI / 20;
   var rotationDirection = 1;
 
+  // Store timeouts ids to be able to clear them
+  var timeoutsIds = [],
+    intervalsIds = [];
+
   // create engine
   var engine = Engine.create({
       // enableSleeping: true,
@@ -117,8 +121,6 @@ window.addEventListener("load", function () {
       showShadows: false,
     },
   });
-
-  // Render.run(render);
 
   // create runner
   var runner = Runner.create({
@@ -363,12 +365,14 @@ window.addEventListener("load", function () {
         });
       },
       onComplete() {
-        setTimeout(function () {
+        var toTlOrangeBody = setTimeout(function () {
           // Reverse gravity
           engine.gravity.y = -1;
 
           Composite.add(world, [constraintPinkToOrange]);
         }, 3100);
+
+        timeoutsIds.push(toTlOrangeBody);
       },
     });
 
@@ -387,7 +391,7 @@ window.addEventListener("load", function () {
         });
       },
       onComplete() {
-        setTimeout(function () {
+        var toTlBlueBody = setTimeout(function () {
           Composite.add(world, [constraintBlueToOrange]);
 
           var time = 0;
@@ -442,7 +446,7 @@ window.addEventListener("load", function () {
                 pair.bodyB.id == rightWall.id ||
                 pair.bodyB.id == leftWall.id
               ) {
-                document.getElementById(pair.bodyA.id).remove();
+                document.getElementById(pair.bodyA.id)?.remove();
                 World.remove(world, pair.bodyA);
               }
             });
@@ -460,6 +464,8 @@ window.addEventListener("load", function () {
           Body.setInertia(orangeBody, 17261018.8762768);
           Body.setInertia(blueBody, 43666991.38030446);
         }, 3100);
+
+        timeoutsIds.push(toTlBlueBody);
       },
     });
 
@@ -482,6 +488,8 @@ window.addEventListener("load", function () {
       blueBox.style.opacity = 0;
       orangeBox.style.opacity = 0;
       pinkBox.style.opacity = 0;
+
+      Render.run(render);
     }
 
     if (!debug) {
@@ -564,7 +572,7 @@ window.addEventListener("load", function () {
 
       Composite.add(world, circle);
 
-      setInterval(() => {
+      var spawnInterval = setInterval(() => {
         const circle = Bodies.circle(
           xPosition,
           yPosition,
@@ -594,6 +602,8 @@ window.addEventListener("load", function () {
 
         Composite.add(world, circle);
       }, seconds * 1000);
+
+      intervalsIds.push(spawnInterval);
     }
   }
 
@@ -602,25 +612,55 @@ window.addEventListener("load", function () {
   /**
    * Handle resize
    */
-  this.window.addEventListener("resize", function () {
-    VIEW.width = window.innerWidth;
-    VIEW.height = window.innerHeight;
 
-    render.bounds.max.x = window.innerWidth;
-    render.bounds.max.y = window.innerHeight;
-    render.options.width = window.innerWidth;
-    render.options.height = window.innerHeight;
-    render.canvas.width = window.innerWidth;
-    render.canvas.height = window.innerHeight;
+  this.window.addEventListener(
+    "resize",
+    debounce(function () {
+      console.log(fallingCircleOptions);
 
-    Render.setPixelRatio(render, window.devicePixelRatio); // added this
+      engine.gravity.y = 1;
 
-    // Delete all bodies
-    World.clear(engine.world, false);
+      VIEW.width = window.innerWidth;
+      VIEW.height = window.innerHeight;
 
-    // Recreate bodies
-    createBodies();
-  });
+      render.bounds.max.x = window.innerWidth;
+      render.bounds.max.y = window.innerHeight;
+      render.options.width = window.innerWidth;
+      render.options.height = window.innerHeight;
+      render.canvas.width = window.innerWidth;
+      render.canvas.height = window.innerHeight;
+
+      Render.setPixelRatio(render, window.devicePixelRatio); // added this
+
+      // Delete all bodies
+      World.clear(engine.world, false);
+
+      // Clear all timeouts
+      timeoutsIds.forEach(function (id) {
+        clearTimeout(id);
+      });
+
+      // Clear all intervals
+      intervalsIds.forEach(function (id) {
+        clearInterval(id);
+      });
+
+      // clear gsap timelines
+      gsap.globalTimeline.clear();
+
+      // reset all the dom elements
+      document.querySelectorAll(".box").forEach((element) => {
+        element.style.transform = "";
+
+        if (element.id.toString().toLowerCase().includes("falling-circle")) {
+          element.remove();
+        }
+      });
+
+      // Recreate bodies
+      createBodies();
+    })
+  );
 
   function createEllipse(x, y, width, height, options, sides = 100) {
     var vertices = [];
@@ -669,4 +709,12 @@ function deepMerge(target, ...sources) {
   }
 
   return deepMerge(target, ...sources);
+}
+
+function debounce(func) {
+  var timer;
+  return function (event) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(func, 100, event);
+  };
 }
