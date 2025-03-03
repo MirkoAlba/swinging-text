@@ -21,7 +21,7 @@ window.addEventListener("load", function () {
   // Boxes default options
   var defaultObjectOptions = {
     // mass: 2,
-    restitution: 0,
+    restitution: 0.5,
     friction: 1,
   };
 
@@ -52,21 +52,21 @@ window.addEventListener("load", function () {
     },
   };
 
-  // Orange body variables
-  // var maxAngle = 12 * (Math.PI / 180),
-  //   minAngle = -12 * (Math.PI / 180),
-  //   rotationDirection = 1,
-  //   rotationSpeed = 0.003;
+  // Wobble
+  var pinkBodyOffset = 80, // amplitude of the wobble
+    pinkBodySpeed = 0.0025; // speed of the wobble
 
-  // Blue body variables
-  // var maxAngleBlueBody = 14 * (Math.PI / 180),
-  //   minAngleBlueBody = -14 * (Math.PI / 180),
-  //   rotationDirectionBlueBody = 1,
-  //   rotationSpeedBlueBody = 0.003;
+  if (window.matchMedia("(max-width: 576px)").matches) {
+    pinkBodyOffset = 40;
 
-  // var lastTime = 0,
-  //   forceDirection = 1,
-  //   forceIntensity = 1.5;
+    fallingCircleOptions.xPosition = VIEW.width / 2;
+    fallingCircleOptions.circleDimensions = 15;
+  }
+
+  // Mobile gentle rotation
+  var rotationSpeed = 0.001;
+  var maxAngle = Math.PI / 20;
+  var rotationDirection = 1;
 
   // create engine
   var engine = Engine.create({
@@ -74,9 +74,6 @@ window.addEventListener("load", function () {
       pixelRatio: 1,
     }),
     world = engine.world;
-
-  // Reverse gravity
-  engine.gravity.y = -1;
 
   var debug = false,
     url = new URL(window.location.href);
@@ -121,7 +118,7 @@ window.addEventListener("load", function () {
     },
   });
 
-  Render.run(render);
+  // Render.run(render);
 
   // create runner
   var runner = Runner.create({
@@ -134,14 +131,6 @@ window.addEventListener("load", function () {
     // add walls
 
     Composite.add(world, [
-      // ground
-      (ground = Bodies.rectangle(
-        VIEW.width / 2,
-        VIEW.height + 50,
-        VIEW.width + 200,
-        100,
-        groundopts
-      )),
       // walls
       (rightWall = Bodies.rectangle(
         VIEW.width + 200,
@@ -161,7 +150,7 @@ window.addEventListener("load", function () {
 
     rightWall.id = "rightWall";
     leftWall.id = "leftWall";
-    ground.id = "ground";
+    // ground.id = "ground";
 
     // Boxes
 
@@ -184,27 +173,43 @@ window.addEventListener("load", function () {
       pinkBoxWidth = pinkBoxPositionInfo.width,
       pinkBoxHeight = pinkBoxPositionInfo.height;
 
+    var blueBoxStartingOffset = 0,
+      orangeBoxStartingOffset = 0;
+
     // Elements arraytorender with options
     elements = [
       {
+        // blue body
         type: "rectangle",
         el: blueBox,
         x: VIEW.width / 2,
-        y: VIEW.height - blueBoxHeight / 2 - orangeBoxHeight - pinkBoxHeight,
-        options: {},
+        y:
+          VIEW.height * 2 -
+          blueBoxHeight -
+          orangeBoxHeight +
+          blueBoxStartingOffset,
+        options: {
+          restitution: 0.7,
+          inertia: Infinity,
+        },
       },
       {
+        // orange body
         type: "ellipse",
         el: orangeBox,
         x: VIEW.width / 2,
-        y: VIEW.height - orangeBoxHeight / 2 - pinkBoxHeight,
-        options: {},
+        y: VIEW.height * 2 - orangeBoxHeight + orangeBoxStartingOffset,
+        options: {
+          restitution: 0.7,
+          inertia: Infinity,
+        },
       },
       {
+        // pink body
         type: "circle",
         el: pinkBox,
         x: VIEW.width / 2,
-        y: VIEW.height - pinkBox.offsetHeight / 2,
+        y: VIEW.height * 2,
         options: { isStatic: true },
       },
     ];
@@ -293,18 +298,172 @@ window.addEventListener("load", function () {
       pointA: { x: 0, y: blueBoxHeight / 2 },
       bodyB: orangeBody,
       pointB: { x: 0, y: -orangeBoxHeight / 2 },
-      length: 4,
+      length: 3,
       stiffness: 1,
     });
 
     // Add objects to the world
-    Composite.add(world, [
-      blueBody,
-      orangeBody,
-      pinkBody,
-      constraintPinkToOrange,
-      constraintBlueToOrange,
-    ]);
+    Composite.add(world, [blueBody, orangeBody, pinkBody]);
+
+    // Popup/Intro section options
+    var tweenTimeScale = 1.5; // speed
+    var pinkBodyInitialY = { y: pinkBody.position.y };
+
+    // Tween pink body
+    var tlPinkBody = gsap.to(pinkBodyInitialY, {
+      y: VIEW.height - pinkBoxHeight - 100,
+      duration: 1,
+      onUpdate() {
+        Body.setPosition(pinkBody, {
+          x: VIEW.width / 2,
+          y: pinkBodyInitialY.y,
+        });
+      },
+      onComplete() {
+        var tlPinkBodyBounce = gsap.to(pinkBodyInitialY, {
+          y: VIEW.height - pinkBoxHeight / 2,
+          duration: 1.75,
+          ease: "bounce.out",
+          onUpdate() {
+            Body.setPosition(pinkBody, {
+              x: VIEW.width / 2,
+              y: pinkBodyInitialY.y,
+            });
+          },
+          onComplete() {
+            Composite.add(world, [
+              // ground
+              Bodies.rectangle(
+                VIEW.width / 2,
+                VIEW.height + 50,
+                VIEW.width + 200,
+                100,
+                groundopts
+              ),
+            ]);
+          },
+        });
+
+        tlPinkBodyBounce.timeScale(tweenTimeScale);
+      },
+    });
+
+    tlPinkBody.timeScale(tweenTimeScale);
+
+    // Tween orange body
+    var orangeBodyInitialY = { y: orangeBody.position.y };
+
+    var tlOrangeBody = gsap.to(orangeBodyInitialY, {
+      y: VIEW.height - orangeBoxHeight - 60,
+      duration: 1,
+      onUpdate() {
+        Body.setPosition(orangeBody, {
+          x: VIEW.width / 2,
+          y: orangeBodyInitialY.y,
+        });
+      },
+      onComplete() {
+        setTimeout(function () {
+          // Reverse gravity
+          engine.gravity.y = -1;
+
+          Composite.add(world, [constraintPinkToOrange]);
+        }, 3100);
+      },
+    });
+
+    tlOrangeBody.timeScale(tweenTimeScale);
+
+    // Tween blue body
+    var blueBodyInitialY = { y: blueBody.position.y };
+
+    var tlBlueBody = gsap.to(blueBodyInitialY, {
+      y: VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 100,
+      duration: 1,
+      onUpdate() {
+        Body.setPosition(blueBody, {
+          x: VIEW.width / 2,
+          y: blueBodyInitialY.y,
+        });
+      },
+      onComplete() {
+        setTimeout(function () {
+          Composite.add(world, [constraintBlueToOrange]);
+
+          var time = 0;
+
+          // start the animation
+          Events.on(engine, "beforeUpdate", function (event) {
+            /**
+             * White Body Circle
+             */
+            // Normal gravity
+            world.bodies.forEach((body) => {
+              if (body.reverseGravity) {
+                const additionalForce = {
+                  x: 0,
+                  y: body.mass * 2 * engine.world.gravity.scale,
+                };
+                Body.applyForce(body, body.position, additionalForce);
+                Body.setAngularVelocity(body, 2);
+              }
+            });
+
+            /**
+             * Pink Body Swing
+             */
+            var pinkOffset = pinkBodyOffset * Math.sin(time * pinkBodySpeed);
+            Body.setPosition(pinkBody, {
+              x: pinkBodyInitialX + pinkOffset,
+              y: pinkBody.position.y,
+            });
+
+            /**
+             * Blue Body Swing
+             */
+
+            if (window.matchMedia("(max-width: 576px)").matches) {
+              if (blueBody.angle >= maxAngle) {
+                rotationDirection = -1;
+              } else if (blueBody.angle <= -maxAngle) {
+                rotationDirection = 1;
+              }
+
+              Body.rotate(blueBody, rotationSpeed * rotationDirection);
+            }
+
+            // update time
+            time = time + 10;
+          });
+
+          Events.on(engine, "collisionStart", function (event) {
+            event.pairs.forEach((pair) => {
+              if (
+                pair.bodyB.id == rightWall.id ||
+                pair.bodyB.id == leftWall.id
+              ) {
+                document.getElementById(pair.bodyA.id).remove();
+                World.remove(world, pair.bodyA);
+              }
+            });
+          });
+
+          spawnFallingCircle(
+            fallingCircleOptions.seconds,
+            fallingCircleOptions.xPosition,
+            fallingCircleOptions.yPosition,
+            fallingCircleOptions.circleDimensions,
+            fallingCircleOptions.fallingSpeed
+          );
+
+          // reset inertia initial values
+          Body.setInertia(orangeBody, 17261018.8762768);
+          Body.setInertia(blueBody, 43666991.38030446);
+        }, 3100);
+      },
+    });
+
+    tlBlueBody.timeScale(tweenTimeScale);
 
     /**
      * Animate objects
@@ -312,133 +471,7 @@ window.addEventListener("load", function () {
      */
 
     // Pink body variables
-    var pinkBodyInitialX = pinkBody.position.x,
-      pinkBodyOffset = 80,
-      pinkBodySpeed = 0.002;
-
-    if (window.matchMedia("(max-width: 576px)").matches) {
-      pinkBodyOffset = 40;
-
-      fallingCircleOptions.xPosition = VIEW.width / 2;
-      fallingCircleOptions.circleDimensions = 15;
-    }
-
-    Events.on(engine, "beforeUpdate", function (event) {
-      var time = engine.timing.timestamp,
-        timeScale = (event.delta || 1000 / 60) / 1000;
-
-      /**
-       * White Body Circle
-       */
-
-      // Normal gravity
-      world.bodies.forEach((body) => {
-        if (body.reverseGravity) {
-          const additionalForce = {
-            x: 0,
-            y: body.mass * 2 * engine.world.gravity.scale,
-          };
-
-          Body.applyForce(body, body.position, additionalForce);
-
-          Body.setAngularVelocity(body, 2);
-        }
-      });
-
-      /**
-       * Pink Body Swing
-       */
-
-      var pinkOffset = pinkBodyOffset * Math.sin(time * pinkBodySpeed);
-
-      Body.setPosition(pinkBody, {
-        x: pinkBodyInitialX + pinkOffset,
-        y: pinkBody.position.y,
-      });
-
-      /**
-       * Orange Body Swing
-       */
-
-      // var newAngle = orangeBody.angle + rotationSpeed * rotationDirection;
-
-      // if (newAngle >= maxAngle) {
-      //   newAngle = maxAngle;
-      //   rotationDirection = -1;
-      // } else if (newAngle <= minAngle) {
-      //   newAngle = minAngle;
-      //   rotationDirection = 1;
-      // }
-
-      // Body.setAngle(orangeBody, newAngle);
-
-      // every tot sec
-      // if (engine.timing.timestamp - lastTime >= 4000) {
-      //   var forceMagnitude =
-      //     forceDirection * forceIntensity * orangeBody.mass * timeScale;
-
-      //   Body.applyForce(
-      //     orangeBody,
-      //     {
-      //       x: orangeBody.position.x + orangeBoxWidth / 2,
-      //       y: orangeBody.position.y,
-      //     },
-      //     {
-      //       x: forceMagnitude,
-      //       y: 0,
-      //     }
-      //   );
-
-      //   // update last time
-      //   lastTime = engine.timing.timestamp;
-
-      //   forceDirection *= -1;
-      // }
-
-      /**
-       * Blue Body Swing
-       */
-      // var newAngleBlueBody =
-      //   blueBody.angle + rotationSpeedBlueBody * rotationDirectionBlueBody;
-
-      // if (newAngleBlueBody >= maxAngleBlueBody) {
-      //   newAngleBlueBody = maxAngleBlueBody;
-      //   rotationDirectionBlueBody = -1;
-      // } else if (newAngleBlueBody <= minAngleBlueBody) {
-      //   newAngleBlueBody = minAngleBlueBody;
-      //   rotationDirectionBlueBody = 1;
-      // }
-
-      // Body.setAngle(blueBody, newAngleBlueBody);
-
-      // world.bodies.forEach((body) => {
-      //   if (body.reverseGravity) {
-      //     var gravity = engine.world.gravity;
-
-      //     Body.applyForce(body, body.position, {
-      //       x: -gravity.x * gravity.scale * body.mass,
-      //       y: -gravity.y * gravity.scale * body.mass,
-      //     });
-      //   }
-      // });
-    });
-
-    Events.on(engine, "collisionStart", function (event) {
-      event.pairs.forEach((pair) => {
-        if (pair.bodyB.id == rightWall.id || pair.bodyB.id == leftWall.id) {
-          document.getElementById(pair.bodyA.id).remove();
-          World.remove(world, pair.bodyA);
-        }
-      });
-    });
-
-    spawnFallingCircle(
-      fallingCircleOptions.seconds,
-      fallingCircleOptions.xPosition,
-      fallingCircleOptions.yPosition,
-      fallingCircleOptions.circleDimensions,
-      fallingCircleOptions.fallingSpeed
-    );
+    var pinkBodyInitialX = pinkBody.position.x;
 
     Render.lookAt(render, {
       min: { x: 0, y: 0 },
@@ -502,6 +535,35 @@ window.addEventListener("load", function () {
       circleDimensions,
       fallingSpeed
     ) {
+      const circle = Bodies.circle(
+        xPosition,
+        yPosition,
+        circleDimensions,
+        fallingCircleOptions.defaultBodyOptions
+      );
+
+      Matter.Body.setVelocity(circle, { x: 0, y: fallingSpeed });
+
+      circle.reverseGravity = true;
+
+      circle.id = "falling-circle-" + Math.floor(1000 + Math.random() * 9000);
+
+      var newElement = document.createElement("div");
+
+      newElement.classList.add("box");
+
+      newElement.classList.add("box--white");
+
+      newElement.id = circle.id;
+
+      newElement.style.width = circleDimensions * 2 + "px";
+
+      newElement.style.height = circleDimensions * 2 + "px";
+
+      container.prepend(newElement);
+
+      Composite.add(world, circle);
+
       setInterval(() => {
         const circle = Bodies.circle(
           xPosition,

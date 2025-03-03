@@ -191,3 +191,10 @@ table {
     width: 10vw;
   }
 }
+
+@media (max-width: 768px) {
+  .box--pink {
+    height: 8vw;
+    width: 8vw;
+  }
+}
