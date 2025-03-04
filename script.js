@@ -326,12 +326,12 @@ window.addEventListener("load", function () {
         VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 100;
 
     if (window.matchMedia("(max-width: 576px)").matches) {
-      finalYPinkBody = VIEW.height - pinkBoxHeight - 110;
+      finalYPinkBody = VIEW.height - pinkBoxHeight - 50;
 
       finalYOrangeBody = VIEW.height - orangeBoxHeight - 120;
 
       finalYBlueBody =
-        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 150;
+        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 170;
     }
 
     console.log(finalYPinkBody);
