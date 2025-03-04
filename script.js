@@ -178,6 +178,13 @@ window.addEventListener("load", function () {
     var blueBoxStartingOffset = 0,
       orangeBoxStartingOffset = 0;
 
+    var orangeBodyRestitution = 0.7,
+      blueBodyRestitution = 0.7;
+
+    if (window.matchMedia("(max-width: 576px)").matches) {
+      orangeBodyRestitution = 0.4;
+    }
+
     // Elements arraytorender with options
     elements = [
       {
@@ -191,7 +198,7 @@ window.addEventListener("load", function () {
           orangeBoxHeight +
           blueBoxStartingOffset,
         options: {
-          restitution: 0.7,
+          restitution: blueBodyRestitution,
           inertia: Infinity,
         },
       },
@@ -202,7 +209,7 @@ window.addEventListener("load", function () {
         x: VIEW.width / 2,
         y: VIEW.height * 2 - orangeBoxHeight + orangeBoxStartingOffset,
         options: {
-          restitution: 0.7,
+          restitution: orangeBodyRestitution,
           inertia: Infinity,
         },
       },
@@ -311,9 +318,29 @@ window.addEventListener("load", function () {
     var tweenTimeScale = 1.5; // speed
     var pinkBodyInitialY = { y: pinkBody.position.y };
 
+    // Final y position of the bodies
+    var finalYPinkBody = VIEW.height - pinkBoxHeight - 100,
+      finalYPinkBodyBounce = VIEW.height - pinkBoxHeight / 2,
+      finalYOrangeBody = VIEW.height - orangeBoxHeight - 60,
+      finalYBlueBody =
+        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 100;
+
+    if (window.matchMedia("(max-width: 576px)").matches) {
+      finalYPinkBody = VIEW.height - pinkBoxHeight - 110;
+
+      finalYOrangeBody = VIEW.height - orangeBoxHeight - 120;
+
+      finalYBlueBody =
+        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 150;
+    }
+
+    console.log(finalYPinkBody);
+    console.log(finalYOrangeBody);
+    console.log(finalYBlueBody);
+
     // Tween pink body
     var tlPinkBody = gsap.to(pinkBodyInitialY, {
-      y: VIEW.height - pinkBoxHeight - 100,
+      y: finalYPinkBody,
       duration: 1,
       onUpdate() {
         Body.setPosition(pinkBody, {
@@ -323,7 +350,7 @@ window.addEventListener("load", function () {
       },
       onComplete() {
         var tlPinkBodyBounce = gsap.to(pinkBodyInitialY, {
-          y: VIEW.height - pinkBoxHeight / 2,
+          y: finalYPinkBodyBounce,
           duration: 1.75,
           ease: "bounce.out",
           onUpdate() {
@@ -356,7 +383,7 @@ window.addEventListener("load", function () {
     var orangeBodyInitialY = { y: orangeBody.position.y };
 
     var tlOrangeBody = gsap.to(orangeBodyInitialY, {
-      y: VIEW.height - orangeBoxHeight - 60,
+      y: finalYOrangeBody,
       duration: 1,
       onUpdate() {
         Body.setPosition(orangeBody, {
@@ -382,7 +409,7 @@ window.addEventListener("load", function () {
     var blueBodyInitialY = { y: blueBody.position.y };
 
     var tlBlueBody = gsap.to(blueBodyInitialY, {
-      y: VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 100,
+      y: finalYBlueBody,
       duration: 1,
       onUpdate() {
         Body.setPosition(blueBody, {
@@ -616,8 +643,6 @@ window.addEventListener("load", function () {
   this.window.addEventListener(
     "resize",
     debounce(function () {
-      console.log(fallingCircleOptions);
-
       engine.gravity.y = 1;
 
       VIEW.width = window.innerWidth;
