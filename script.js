@@ -351,7 +351,7 @@ window.addEventListener("load", function () {
         VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 350;
 
     // Amount of ms to wait in order to start the wobble animation
-    var waitToAnimate = 2000;
+    var waitToAnimate = 1600;
 
     if (window.matchMedia("(max-width: 576px)").matches) {
       finalYPinkBody = VIEW.height - pinkBoxHeight - 50;
