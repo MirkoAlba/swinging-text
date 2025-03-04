@@ -55,7 +55,7 @@ window.addEventListener("load", function () {
   // Wobble
   var pinkBodyOffset = 80, // amplitude of the wobble
     pinkBodyInitialSpeed = 0, // initial speed of the wobble
-    pinkBodySpeed = 0.0025; // speed of the wobble
+    pinkBodySpeed = 0.0035; // speed of the wobble
 
   if (window.matchMedia("(max-width: 576px)").matches) {
     pinkBodyOffset = 40;
@@ -211,10 +211,8 @@ window.addEventListener("load", function () {
           blueBoxStartingOffset,
         options: {
           restitution: blueBodyRestitution,
-          inertia: Infinity,
           angle: 0,
           frictionAir: frictionAir,
-          // isStatic: true,
         },
       },
       {
@@ -225,10 +223,8 @@ window.addEventListener("load", function () {
         y: VIEW.height * 2 - orangeBoxHeight + orangeBoxStartingOffset,
         options: {
           restitution: orangeBodyRestitution,
-          inertia: Infinity,
           angle: 0,
           frictionAir: frictionAir,
-          // isStatic: true,
         },
       },
       {
@@ -485,15 +481,15 @@ window.addEventListener("load", function () {
              * Blue Body Swing
              */
 
-            if (window.matchMedia("(max-width: 576px)").matches) {
-              if (blueBody.angle >= maxAngle) {
-                rotationDirection = -1;
-              } else if (blueBody.angle <= -maxAngle) {
-                rotationDirection = 1;
-              }
+            // if (window.matchMedia("(max-width: 576px)").matches) {
+            //   if (blueBody.angle >= maxAngle) {
+            //     rotationDirection = -1;
+            //   } else if (blueBody.angle <= -maxAngle) {
+            //     rotationDirection = 1;
+            //   }
 
-              Body.rotate(blueBody, rotationSpeed * rotationDirection);
-            }
+            //   Body.rotate(blueBody, rotationSpeed * rotationDirection);
+            // }
 
             // update time
             time = time + 10;
@@ -522,6 +518,16 @@ window.addEventListener("load", function () {
           // reset inertia initial values
           Body.setInertia(orangeBody, 17261018.8762768);
           Body.setInertia(blueBody, 43666991.38030446);
+
+          if (window.matchMedia("(max-width: 768px)").matches) {
+            Body.setInertia(orangeBody, 2812564.448240737);
+            Body.setInertia(blueBody, 5755938.8756691385);
+          }
+
+          if (window.matchMedia("(max-width: 576px)").matches) {
+            Body.setInertia(orangeBody, 302522.61430719413);
+            Body.setInertia(blueBody, 668020.7398080279);
+          }
         }, waitToAnimate);
 
         timeoutsIds.push(toTlBlueBody);

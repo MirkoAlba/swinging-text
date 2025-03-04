@@ -11,4 +11,4 @@ Intro section:
 
 Ball drop:
     ✔ fix the setInterval causing the creation of dozens of ball if the tab is not focused @done(25-03-04 16:38)
-    ✔ change the restitution of the balls -> changed to 0.2 (fallingCircleOptions object) @done(25-03-04 16:36)
+    ✔ change the restitution of the balls -> changed to 0.1 (fallingCircleOptions object) @done(25-03-04 16:36)

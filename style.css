@@ -178,6 +178,10 @@ table {
 }
 
 @media (max-width: 576px) {
+  .box h2 {
+    font-size: 9vw;
+  }
+
   .box--orange {
     padding: 10px;
   }
