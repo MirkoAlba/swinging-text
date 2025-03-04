@@ -74,8 +74,7 @@ window.addEventListener("load", function () {
 
   // create engine
   var engine = Engine.create({
-      // enableSleeping: true,
-      pixelRatio: 1,
+      pixelRatio: window.devicePixelRatio,
     }),
     world = engine.world;
 
@@ -92,6 +91,10 @@ window.addEventListener("load", function () {
   // fall speed
   if (speed && speed > 0) {
     engine.timing.timeScale = speed;
+  }
+
+  if (window.matchMedia("(max-width: 576px)").matches) {
+    engine.timing.timeScale = 0.5;
   }
 
   var container = document.getElementById("container");
@@ -125,6 +128,9 @@ window.addEventListener("load", function () {
   // create runner
   var runner = Runner.create({
     enableSleeping: false,
+    // constraintIterations: 6,
+    // positionIterations: 8,
+    // velocityIterations: 8,
   });
 
   Runner.run(runner, engine);
@@ -200,6 +206,7 @@ window.addEventListener("load", function () {
         options: {
           restitution: blueBodyRestitution,
           inertia: Infinity,
+          // isStatic: true,
         },
       },
       {
@@ -211,6 +218,7 @@ window.addEventListener("load", function () {
         options: {
           restitution: orangeBodyRestitution,
           inertia: Infinity,
+          // isStatic: true,
         },
       },
       {
@@ -328,15 +336,11 @@ window.addEventListener("load", function () {
     if (window.matchMedia("(max-width: 576px)").matches) {
       finalYPinkBody = VIEW.height - pinkBoxHeight - 50;
 
-      finalYOrangeBody = VIEW.height - orangeBoxHeight - 120;
+      finalYOrangeBody = VIEW.height - orangeBoxHeight - 100;
 
       finalYBlueBody =
-        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 170;
+        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 150;
     }
-
-    console.log(finalYPinkBody);
-    console.log(finalYOrangeBody);
-    console.log(finalYBlueBody);
 
     // Tween pink body
     var tlPinkBody = gsap.to(pinkBodyInitialY, {
