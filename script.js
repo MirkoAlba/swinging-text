@@ -46,8 +46,7 @@ window.addEventListener("load", function () {
     circleDimensions: 30,
     fallingSpeed: 20,
     defaultBodyOptions: {
-      isStatic: false,
-      restitution: 0.6,
+      restitution: 0.2,
       friction: 1,
     },
   };
@@ -329,18 +328,21 @@ window.addEventListener("load", function () {
     // Final y position of the bodies
     var finalYPinkBody = VIEW.height - pinkBoxHeight - 100,
       finalYPinkBodyBounce = VIEW.height - pinkBoxHeight / 2,
-      finalYOrangeBody = VIEW.height - orangeBoxHeight - 60,
+      finalYOrangeBody = VIEW.height - orangeBoxHeight - 175,
       finalYBlueBody =
-        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 100;
+        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 350;
 
     if (window.matchMedia("(max-width: 576px)").matches) {
       finalYPinkBody = VIEW.height - pinkBoxHeight - 50;
 
-      finalYOrangeBody = VIEW.height - orangeBoxHeight - 100;
+      finalYOrangeBody = VIEW.height - orangeBoxHeight - 200;
 
       finalYBlueBody =
-        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 150;
+        VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 350;
     }
+
+    // Amount of ms to wait in order to start the wobble animation
+    var waitToAnimate = 2500;
 
     // Tween pink body
     var tlPinkBody = gsap.to(pinkBodyInitialY, {
@@ -401,7 +403,7 @@ window.addEventListener("load", function () {
           engine.gravity.y = -1;
 
           Composite.add(world, [constraintPinkToOrange]);
-        }, 3100);
+        }, waitToAnimate);
 
         timeoutsIds.push(toTlOrangeBody);
       },
@@ -494,7 +496,7 @@ window.addEventListener("load", function () {
           // reset inertia initial values
           Body.setInertia(orangeBody, 17261018.8762768);
           Body.setInertia(blueBody, 43666991.38030446);
-        }, 3100);
+        }, waitToAnimate);
 
         timeoutsIds.push(toTlBlueBody);
       },
@@ -604,6 +606,10 @@ window.addEventListener("load", function () {
       Composite.add(world, circle);
 
       var spawnInterval = setInterval(() => {
+        if (!document.hasFocus()) {
+          return;
+        }
+
         const circle = Bodies.circle(
           xPosition,
           yPosition,
