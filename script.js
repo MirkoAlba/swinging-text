@@ -46,13 +46,15 @@ window.addEventListener("load", function () {
     circleDimensions: 30,
     fallingSpeed: 20,
     defaultBodyOptions: {
-      restitution: 0.2,
+      restitution: 0.1,
       friction: 1,
+      frictionAir: 0.01,
     },
   };
 
   // Wobble
   var pinkBodyOffset = 80, // amplitude of the wobble
+    pinkBodyInitialSpeed = 0, // initial speed of the wobble
     pinkBodySpeed = 0.0025; // speed of the wobble
 
   if (window.matchMedia("(max-width: 576px)").matches) {
@@ -60,11 +62,12 @@ window.addEventListener("load", function () {
 
     fallingCircleOptions.xPosition = VIEW.width / 2;
     fallingCircleOptions.circleDimensions = 15;
+    fallingCircleOptions.defaultBodyOptions.frictionAir = 0.005;
   }
 
   // Mobile gentle rotation
-  var rotationSpeed = 0.001;
-  var maxAngle = Math.PI / 20;
+  var rotationSpeed = 0.0005;
+  var maxAngle = Math.PI / 25;
   var rotationDirection = 1;
 
   // Store timeouts ids to be able to clear them
@@ -184,10 +187,14 @@ window.addEventListener("load", function () {
       orangeBoxStartingOffset = 0;
 
     var orangeBodyRestitution = 0.7,
-      blueBodyRestitution = 0.7;
+      blueBodyRestitution = 0.5;
+
+    var frictionAir = 0.025;
 
     if (window.matchMedia("(max-width: 576px)").matches) {
       orangeBodyRestitution = 0.4;
+
+      frictionAir = 0.005;
     }
 
     // Elements arraytorender with options
@@ -205,6 +212,8 @@ window.addEventListener("load", function () {
         options: {
           restitution: blueBodyRestitution,
           inertia: Infinity,
+          angle: 0,
+          frictionAir: frictionAir,
           // isStatic: true,
         },
       },
@@ -217,6 +226,8 @@ window.addEventListener("load", function () {
         options: {
           restitution: orangeBodyRestitution,
           inertia: Infinity,
+          angle: 0,
+          frictionAir: frictionAir,
           // isStatic: true,
         },
       },
@@ -300,12 +311,19 @@ window.addEventListener("load", function () {
 
     // Link the bodies
 
+    var constraintPinkToOrangeLength = 0,
+      constraintBlueToOrange = 2;
+
+    if (window.matchMedia("(max-width: 576px)").matches) {
+      constraintBlueToOrange = 2;
+    }
+
     var constraintPinkToOrange = Constraint.create({
       bodyA: pinkBody,
       pointA: { x: 0, y: -pinkBoxHeight / 2 }, // top of the pink box
       bodyB: orangeBody,
-      pointB: { x: 0, y: orangeBoxHeight / 2 }, // top of the orange box
-      length: 1,
+      pointB: { x: 3.5, y: orangeBoxHeight / 2 }, // top of the orange box
+      length: constraintPinkToOrangeLength,
       stiffness: 1,
     });
 
@@ -314,7 +332,7 @@ window.addEventListener("load", function () {
       pointA: { x: 0, y: blueBoxHeight / 2 },
       bodyB: orangeBody,
       pointB: { x: 0, y: -orangeBoxHeight / 2 },
-      length: 3,
+      length: constraintBlueToOrange,
       stiffness: 1,
     });
 
@@ -332,6 +350,9 @@ window.addEventListener("load", function () {
       finalYBlueBody =
         VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 350;
 
+    // Amount of ms to wait in order to start the wobble animation
+    var waitToAnimate = 2000;
+
     if (window.matchMedia("(max-width: 576px)").matches) {
       finalYPinkBody = VIEW.height - pinkBoxHeight - 50;
 
@@ -339,10 +360,9 @@ window.addEventListener("load", function () {
 
       finalYBlueBody =
         VIEW.height - blueBoxHeight - orangeBoxHeight - pinkBoxHeight - 350;
-    }
 
-    // Amount of ms to wait in order to start the wobble animation
-    var waitToAnimate = 2500;
+      waitToAnimate = 2500;
+    }
 
     // Tween pink body
     var tlPinkBody = gsap.to(pinkBodyInitialY, {
@@ -449,7 +469,13 @@ window.addEventListener("load", function () {
             /**
              * Pink Body Swing
              */
-            var pinkOffset = pinkBodyOffset * Math.sin(time * pinkBodySpeed);
+
+            if (pinkBodyInitialSpeed < pinkBodySpeed) {
+              pinkBodyInitialSpeed += 0.0001;
+            }
+
+            var pinkOffset =
+              pinkBodyOffset * Math.sin(time * pinkBodyInitialSpeed);
             Body.setPosition(pinkBody, {
               x: pinkBodyInitialX + pinkOffset,
               y: pinkBody.position.y,

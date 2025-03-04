@@ -198,131 +198,98 @@
       var runner = Runner.create();
       Runner.run(runner, engine);
 
-      var bodyBRadius = 60,
-        bodyAWidth = 400,
-        bodyAHeight = 150;
-
-      var bodyA = createEllipse(
-        window.innerWidth / 2,
-        window.innerHeight - bodyBRadius - bodyAHeight / 2,
-        // ground.position.y - bodyAHeight / 2,
-        bodyAWidth,
-        bodyAHeight,
-        {
-          restitution: 0.5,
-        }
-      );
-
-      var bodyB = Bodies.circle(
-        window.innerWidth / 2,
-        window.innerHeight * 2 - bodyBRadius,
-        bodyBRadius,
-        {
-          restitution: 1,
-          isStatic: true,
-        }
-      );
-
-      var constraint = Constraint.create({
-        bodyA: bodyA,
-        pointA: { x: 0, y: bodyAHeight / 2 },
-        bodyB: bodyB,
-        pointB: { x: 0, y: -bodyBRadius },
-        length: 1,
-        stiffness: 1,
+      // Creazione dei due body con inertia Infinity per evitare rotazioni
+      const circle = Bodies.circle(300, 50, 30, {
+        inertia: Infinity,
+        restitution: 0.9,
+        render: { fillStyle: "blue" },
+      });
+      const rectangle = Bodies.rectangle(300, 300, 100, 40, {
+        inertia: Infinity,
+        restitution: 0.9,
+        render: { fillStyle: "green" },
       });
 
-      Composite.add(world, [bodyB, bodyA]);
-
-      var gsapTimeScale = 1;
-      var gsapDuration1 = 1;
-      var gsapDuration2 = 1.75;
-      var bodyBInitialY = { y: bodyB.position.y };
-
-      var tl1 = gsap.to(bodyBInitialY, {
-        y: window.innerHeight - bodyBRadius * 2 - 50,
-        duration: gsapDuration1,
-        onUpdate() {
-          Body.setPosition(bodyB, {
-            x: window.innerWidth / 2,
-            y: bodyBInitialY.y,
-          });
+      // Creazione di un'ellisse approssimata con 20 vertici
+      const ellipseVertices = [];
+      const sides = 20;
+      const a = 40,
+        b = 20; // semiasse orizzontale e verticale
+      for (let i = 0; i < sides; i++) {
+        const angle = ((Math.PI * 2) / sides) * i;
+        ellipseVertices.push({
+          x: a * Math.cos(angle),
+          y: b * Math.sin(angle),
+        });
+      }
+      // Posizioniamo l'ellisse tra i due body (media delle posizioni)
+      const posX = 300;
+      const posY = 150;
+      const ellipse = Bodies.fromVertices(
+        posX,
+        posY,
+        [ellipseVertices],
+        {
+          restitution: 0.7,
+          render: { fillStyle: "red" },
+          inertia: Infinity,
         },
-        onComplete() {
-          var tl2 = gsap.to(bodyBInitialY, {
-            y: window.innerHeight - bodyBRadius,
-            duration: gsapDuration2,
-            ease: "bounce.out",
-            onUpdate() {
-              Body.setPosition(bodyB, {
-                x: window.innerWidth / 2,
-                y: bodyBInitialY.y,
+        true
+      );
+      Composite.add(world, ellipse);
+
+      Composite.add(world, [circle, rectangle]);
+
+      let constraintAdded = false;
+      const velocityThreshold = 0.2; // soglia per considerare "fermo" il body
+
+      Matter.Events.on(engine, "afterUpdate", () => {
+        if (!constraintAdded) {
+          // Se entrambi i body sono quasi fermi...
+          if (
+            circle.speed < velocityThreshold &&
+            rectangle.speed < velocityThreshold
+          ) {
+            // Aspettiamo qualche istante per sicurezza
+            setTimeout(() => {
+              // Constraint principale tra cerchio e rettangolo
+              const mainConstraint = Matter.Constraint.create({
+                bodyA: circle,
+                pointA: { x: 0, y: -30 }, // bordo superiore del cerchio (raggio = 30)
+                bodyB: rectangle,
+                pointB: { x: 0, y: 20 }, // bordo inferiore del rettangolo (metà altezza = 20)
+                stiffness: 1,
+                length: 0,
               });
-            },
-            onComplete() {
-              Composite.add(world, [constraint]);
-            },
-          });
+              Composite.add(world, mainConstraint);
 
-          tl2.timeScale(gsapTimeScale);
-        },
+              // Aggiungiamo due constraint per collegare l'ellisse a entrambi i body
+              const constraintCircleEllipse = Matter.Constraint.create({
+                bodyA: circle,
+                pointA: { x: 0, y: -30 },
+                bodyB: ellipse,
+                pointB: { x: 0, y: 20 },
+                stiffness: 1,
+                length: 0,
+              });
+              const constraintRectangleEllipse = Matter.Constraint.create({
+                bodyA: rectangle,
+                pointA: { x: 0, y: 20 },
+                bodyB: ellipse,
+                pointB: { x: 0, y: -20 },
+                stiffness: 1,
+                length: 0,
+              });
+              Composite.add(world, [
+                constraintCircleEllipse,
+                constraintRectangleEllipse,
+              ]);
+
+              constraintAdded = true;
+            }, 500); // attende 500ms
+          }
+        }
       });
-
-      tl1.timeScale(gsapTimeScale);
-
-      // second obj gsap timeline
-
-      // Add constraint after the positioning of the bodies
-      // setTimeout(function () {
-      //   Composite.add(world, [constraint]);
-      // }, 2000);
-
-      var bodyAInitialX = bodyA.position.x,
-        maxAngle = 12 * (Math.PI / 180), // 30 gradi
-        minAngle = -12 * (Math.PI / 180), // -30 gradi
-        rotationDirection = 1,
-        rotationSpeed = 0.003;
-
-      var groundYFinalPosition = window.innerHeight + 50;
-
-      Events.on(engine, "beforeUpdate", function (event) {
-        var time = engine.timing.timestamp,
-          timeScale = (event.delta || 1000 / 60) / 1000;
-
-        //   var newAngle = bodyA.angle + rotationSpeed * rotationDirection;
-
-        //   if (newAngle >= maxAngle) {
-        //     newAngle = maxAngle;
-        //     rotationDirection = -1;
-        //   } else if (newAngle <= minAngle) {
-        //     newAngle = minAngle;
-        //     rotationDirection = 1;
-        //   }
-
-        // if (ground.position.y !== groundYFinalPosition) {
-        //   Body.setPosition(ground, {
-        //     x: window.innerWidth / 2,
-        //     y: window.innerHeight + 50 * time,
-        //   });
-        // }
-      });
-
-      // var groundAnimateObject = { groundY: ground.position.y };
-
-      // gsap.to(groundAnimateObject, {
-      //   groundY: groundYFinalPosition,
-      //   duration: 0.75,
-      //   onUpdate() {
-      //     Body.setPosition(
-      //       ground,
-      //       {
-      //         x: window.innerWidth / 2,
-      //         y: groundAnimateObject.groundY,
-      //       },
-      //       true
-      //     );
-      //   },
-      // });
 
       // add mouse control
       var mouse = Mouse.create(render.canvas),
