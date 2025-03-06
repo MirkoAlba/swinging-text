@@ -682,7 +682,39 @@ window.addEventListener("load", function () {
    * Handle resize
    */
 
-  this.window.addEventListener(
+  function destroyBodies() {
+    // Delete all bodies
+    World.clear(engine.world, false);
+
+    // Clear all timeouts
+    timeoutsIds.forEach(function (id) {
+      clearTimeout(id);
+    });
+
+    // Clear all intervals
+    intervalsIds.forEach(function (id) {
+      clearInterval(id);
+    });
+
+    // clear gsap timelines
+    gsap.globalTimeline.clear();
+
+    // reset all the dom elements
+    document.querySelectorAll(".box").forEach((element) => {
+      element.style.transform = "";
+      element.style.opacity = 0;
+
+      if (element.id.toString().toLowerCase().includes("falling-circle")) {
+        element.remove();
+      }
+    });
+  }
+
+  window.addEventListener("resize", function () {
+    destroyBodies();
+  });
+
+  window.addEventListener(
     "resize",
     debounce(function () {
       engine.gravity.y = 1;
@@ -698,31 +730,6 @@ window.addEventListener("load", function () {
       render.canvas.height = window.innerHeight;
 
       Render.setPixelRatio(render, window.devicePixelRatio); // added this
-
-      // Delete all bodies
-      World.clear(engine.world, false);
-
-      // Clear all timeouts
-      timeoutsIds.forEach(function (id) {
-        clearTimeout(id);
-      });
-
-      // Clear all intervals
-      intervalsIds.forEach(function (id) {
-        clearInterval(id);
-      });
-
-      // clear gsap timelines
-      gsap.globalTimeline.clear();
-
-      // reset all the dom elements
-      document.querySelectorAll(".box").forEach((element) => {
-        element.style.transform = "";
-
-        if (element.id.toString().toLowerCase().includes("falling-circle")) {
-          element.remove();
-        }
-      });
 
       // Recreate bodies
       createBodies();
@@ -782,6 +789,6 @@ function debounce(func) {
   var timer;
   return function (event) {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(func, 100, event);
+    timer = setTimeout(func, 500, event);
   };
 }
