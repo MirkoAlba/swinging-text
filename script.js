@@ -731,6 +731,8 @@ window.addEventListener("load", function () {
 
       Render.setPixelRatio(render, window.devicePixelRatio); // added this
 
+      destroyBodies();
+
       // Recreate bodies
       createBodies();
     })
