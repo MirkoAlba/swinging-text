@@ -38,7 +38,7 @@ window.addEventListener("load", function () {
     friction: 1,
   };
 
-  // White spawning circle spawing options
+  // White spawning circle options
   var fallingCircleOptions = {
     seconds: 6,
     xPosition: VIEW.width / 2 + 200,
